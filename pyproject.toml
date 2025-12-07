@@ -1,0 +1,22 @@
+﻿
+[project]
+name = "deploy_simple"
+version = "0.1.0"
+description = "Descripción de deploy_simple"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.scripts]
+deploy_simple = "deploy_simple.main:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]

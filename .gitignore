@@ -1,0 +1,31 @@
+﻿
+# --- Python General ---
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- Distribution / Build ---
+dist/
+build/
+*.egg-info/
+.deploy.lock
+
+# --- Environments ---
+.venv/
+env/
+.env
+.env.*
+
+# --- Tooling / Testing ---
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# --- IDEs / OS ---
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
