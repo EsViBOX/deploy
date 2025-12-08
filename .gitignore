@@ -9,6 +9,7 @@ dist/
 build/
 *.egg-info/
 .deploy.lock
+*.spec
 
 # --- Environments ---
 .venv/

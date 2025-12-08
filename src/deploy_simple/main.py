@@ -183,6 +183,7 @@ def create_files(root, name, backend):
         "# Build\n"
         "dist/\n"
         "build/\n"
+        "*.spec"
         "\n"
         "# IDEs\n"
         ".vscode/\n"
