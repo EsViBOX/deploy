@@ -59,7 +59,7 @@ def find_python():
 
     for cmd in candidates:
         if path := shutil.which(cmd):
-            print(f"✅ Python encontrado: {path}")
+            print(f"✅ Python: {path}")
             return path
 
     sys.exit("❌ Python no encontrado.")
@@ -67,7 +67,7 @@ def find_python():
 
 def run(cmd, cwd=None, env=None):
     """Ejecuta comando. Falla si hay error."""
-    print(f"ℹ️ {' '.join(cmd)}")
+    print(f"⚙️ {' '.join(cmd)}")
     try:
         subprocess.run(cmd, check=True, cwd=cwd, env=env)
     except subprocess.CalledProcessError as e:
@@ -92,17 +92,16 @@ def create_venv(root, python_exe, version=None):
     Crea venv con uv (si existe) o venv estándar.
 
     EAFP: Intenta operación optimizada (hardlinks). Si falla por problemas
-    de filesystem (OneDrive, Dropbox, cross-drive), reintenta con copy mode.
+    de filesystem (OneDrive, Dropbox...), reintenta con copy mode.
     """
     if not shutil.which("uv"):
-        print("⚙️  Creando venv con Python estándar...")
+        print("✅ Creando venv con Python estándar...")
         if version:
-            print("⚠️  --python requiere uv. Ignorando.")
+            print("⚠️ --python requiere uv. Ignorando.")
         run([python_exe, "-m", "venv", ".venv"], cwd=root)
-        return
+        return True
 
-    print(f"⚙️  Creando venv con uv{f' ({version})' if version else ''}...")
-
+    print(f"✅ Creando venv con uv{f' ({version})' if version else ''}...")
     cmd = ["uv", "venv", ".venv"]
     if version:
         cmd.extend(["--python", version])
@@ -110,11 +109,11 @@ def create_venv(root, python_exe, version=None):
         cmd.extend(["--python", python_exe])
 
     # EAFP: Intentar operación optimizada
-    print(f"$ {' '.join(cmd)}")
+    print(f"⚙️ {' '.join(cmd)}")
     result = subprocess.run(cmd, cwd=root, capture_output=True, text=True)
 
     if result.returncode == 0:
-        return True  # ✅ Éxito con hardlinks
+        return True  # Éxito con hardlinks
 
     # Analizar el error
     error_output = (result.stderr + result.stdout).lower()
@@ -128,8 +127,8 @@ def create_venv(root, python_exe, version=None):
     )
 
     if is_hardlink_error:
-        print("   ℹ️  Problema de hardlinks detectado (OneDrive/Dropbox/cross-drive)")
-        print("   ℹ️  Reintentando con copy mode...")
+        print(" ⚠️ Problema de hardlinks detectado (OneDrive, Dropbox...")
+        print(" ✅ Reintentando con copy mode...")
 
         env = os.environ.copy()
         env["UV_LINK_MODE"] = "copy"
@@ -137,7 +136,7 @@ def create_venv(root, python_exe, version=None):
         return False
     else:
         # Otro tipo de error, mostrar y fallar
-        print("\n❌  Error creando venv:")
+        print("\n❌ Error creando venv:")
         print(result.stderr)
         sys.exit(1)
 
@@ -236,14 +235,14 @@ def init_git(root):
     if not shutil.which("git"):
         return
 
-    print("⚙️  Inicializando Git...")
+    print("✅ Inicializando Git...")
 
     try:
         run(["git", "init", "-b", "main"], cwd=root)
         run(["git", "add", "."], cwd=root)
         run(["git", "commit", "-m", "Initial commit"], cwd=root)
     except SystemExit:
-        print("   ⚠️  Datos de Git incompletos o ya existe. Continuando...")
+        print(" ⚠️ Git incompleto (¿falta user.email o .git ya existe?). Continuando...")
 
 
 def show_next_steps(root, hardlink):
@@ -253,20 +252,27 @@ def show_next_steps(root, hardlink):
     else:
         activate = "source .venv/bin/activate"
 
-    print(f"\n{'=' * 60}")
-    print(f"✅ Proyecto creado: {root.name}")
-    print(f"{'=' * 60}\n")
-    print("Siguientes pasos:\n")
-    print(f"  cd {root.name}")
-    print(f"  {activate}")
+    print(f"✅ Proyecto creado: {root.name}\n")
+    print("✨ Siguientes pasos:\n")
+    print(f"   cd {root.name}")
+    print(f"   {activate}")
     if shutil.which("uv"):
         if hardlink:
-            print("  uv pip install -e .")
+            print("   uv pip install -e .")
         else:
-            print("  uv pip install -e . --link-mode=copy")
+            print("   uv pip install -e . --link-mode=copy")
     else:
-        print("  pip install -e .")
-    print(f"  {root.name}\n")
+        print("   pip install -e .")
+    print(f"   {root.name}\n")
+
+
+def clean(flag_rollback, root):
+    if flag_rollback and root.exists():
+        print("ℹ️ Limpiando instalación incompleta...")
+        try:
+            shutil.rmtree(root)
+        except OSError:
+            print(f"⚠️  No se pudo borrar {root}. Bórralo manualmente.")
 
 
 # ----------------------------------------------------------------------
@@ -300,7 +306,9 @@ Ejemplos:
         help="Versión de Python para uv (ej: 3.14.2). Requiere uv instalado.",
     )
 
-    parser.add_argument("--git", help="Inicializar git al crear el proyecto")
+    parser.add_argument(
+        "--git", action="store_true", help="Inicializar git al crear el proyecto"
+    )
 
     parser.add_argument(
         "--force", action="store_true", help="Sobrescribir proyecto existente"
@@ -320,23 +328,23 @@ Ejemplos:
             pass
         elif not args.force:
             sys.exit(
-                f"❌  La carpeta '{root.name}' no está vacía.\n"
+                f"❌ La carpeta '{root.name}' no está vacía.\n"
                 f"   Usa --force para sobrescribir."
             )
 
     if args.force and lock.exists():
         lock.unlink()
     elif lock.exists():
-        sys.exit("⚠️  El proyecto ya existe. Usa --force para regenerar.")
+        sys.exit("⚠️ El proyecto ya existe. Usa --force para regenerar.")
 
     # Detectar Python
     python_exe = find_python()
 
     # Flag para rollback
-    created_by_us = not root.exists()
+    flag_rollback = not root.exists()
 
     try:
-        print(f"\n🚀 Creando proyecto '{name}' con backend '{args.backend}'...\n")
+        print(f"✅ Creando proyecto '{name}' con backend '{args.backend}'...")
 
         # Flujo principal
         root.mkdir(exist_ok=True)
@@ -351,23 +359,13 @@ Ejemplos:
         show_next_steps(root, hardlink)
 
     except KeyboardInterrupt:
-        print("\n\n❌ Cancelado por el usuario.")
-        if created_by_us and root.exists():
-            print("🧹 Limpiando instalación incompleta...")
-            try:
-                shutil.rmtree(root)
-            except OSError:
-                print(f"⚠️  No se pudo borrar {root}. Bórralo manualmente.")
-        sys.exit(1)
+        print("❌ Cancelado por el usuario.")
+        clean(flag_rollback, root)
+        sys.exit(130)
 
     except Exception as e:
-        print(f"\n❌ Error: {e}")
-        if created_by_us and root.exists():
-            print("🧹 Limpiando instalación incompleta...")
-            try:
-                shutil.rmtree(root)
-            except OSError:
-                print(f"⚠️  No se pudo borrar {root}. Bórralo manualmente.")
+        print(f"❌ Error: {e}")
+        clean(flag_rollback, root)
         sys.exit(1)
 
 
