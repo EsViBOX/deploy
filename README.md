@@ -24,8 +24,13 @@ Este script automatiza la creación de la estructura inicial de un proyecto Pyth
 Simplemente descarga el archivo `deploy.py` y colócalo en una ruta accesible (o en tu carpeta de scripts personales).
 
 ```bash
+# Ejemplo: Descargar con wget
+wget -O deploy.py https://github.com/EsViBOX/deploy/blob/main/src/deploy_simple/main.py
+```
+
+```bash
 # Ejemplo: Descargar con curl
-curl -O https://ruta-a-tu-script/deploy.py
+curl -o deploy.py https://github.com/EsViBOX/deploy/blob/main/src/deploy_simple/main.py
 ```
 
 ## Uso
